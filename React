@@ -1,11 +1,8 @@
-
-
-
 //UI Screen
 
 onLoveTap: () {
 
-                                      // toggle locally first
+// toggle locally first
 
                                       item.isLove.value = !item.isLove.value;
 
@@ -20,8 +17,6 @@ onLoveTap: () {
 
 
 //Controller(Pagination and api)
-
-
 
 Future<void> getMyMemories({String? contentType, int? page}) async {
 
@@ -44,9 +39,6 @@ Future<void> getMyMemories({String? contentType, int? page}) async {
       isMoreMemoriesLoading.value = true;
 
     }
-
-
-
     try {
 
       final response = currentFilter == "all"
@@ -56,8 +48,6 @@ Future<void> getMyMemories({String? contentType, int? page}) async {
           : await ApiClient.getData(ApiUrl.getGalleryPostFilter(
 
           page: pageToFetch, filter: currentFilter));
-
-
 
       if (response.statusCode == 200 || response.statusCode == 201) {
 
@@ -84,9 +74,6 @@ Future<void> getMyMemories({String? contentType, int? page}) async {
           currentPageMemories++;
 
         } else {
-
-          
-
           final startIndex = (pageToFetch - 1) * newMemories.length;
 
           if (startIndex < myMemoriesList.length) {
@@ -139,8 +126,6 @@ Future<void> getMyMemories({String? contentType, int? page}) async {
 
 //Love count api call. And receive page.
 
-
-
 Future<void> loveCount({required String favoriteEventId, required bool isLove, required int currentPage,}) async {
 
     try {
@@ -153,8 +138,6 @@ Future<void> loveCount({required String favoriteEventId, required bool isLove, r
 
       };
 
-
-
       final response =
 
       await ApiClient.postData(ApiUrl.loveEmoji, jsonEncode(body));
@@ -165,8 +148,6 @@ Future<void> loveCount({required String favoriteEventId, required bool isLove, r
 
         showCustomSnackBar("Reaction updated", isError: false);
 
-
-
         // ✅ কেবল ওই page রিফ্রেশ করো
 
         await getMyMemories(
@@ -176,8 +157,6 @@ Future<void> loveCount({required String favoriteEventId, required bool isLove, r
           page: currentPage,
 
         );
-
-
 
         update();
 
