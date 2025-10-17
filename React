@@ -1,1 +1,206 @@
 
+
+
+//UI Screen
+
+onLoveTap: () {
+
+                                      // toggle locally first
+
+                                      item.isLove.value = !item.isLove.value;
+
+                                      debugPrint("Love button clicked: ${item.isLove.value}");
+
+                                      // then call API
+
+                                      controller.loveCount(favoriteEventId: item.id, isLove: item.isLove.value,currentPage: controller.currentPageMemories - 1, );
+
+                                    },
+
+
+
+//Controller(Pagination and api)
+
+
+
+Future<void> getMyMemories({String? contentType, int? page}) async {
+
+    if (contentType != null) currentFilter = contentType;
+
+    final int pageToFetch = page ?? currentPageMemories;
+
+    if (page == null && currentPageMemories > totalPagesMemories) return;
+
+
+
+    if (page == null && currentPageMemories == 1) {
+
+      isLoadingMemories.value = true;
+
+      setFavouriteMemoriesStatus(Status.loading);
+
+    } else if (page == null) {
+
+      isMoreMemoriesLoading.value = true;
+
+    }
+
+
+
+    try {
+
+      final response = currentFilter == "all"
+
+          ? await ApiClient.getData(ApiUrl.getGalleryPosts(page: pageToFetch))
+
+          : await ApiClient.getData(ApiUrl.getGalleryPostFilter(
+
+          page: pageToFetch, filter: currentFilter));
+
+
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+
+        final model = MyMemoriesEventResponse.fromJson(response.body);
+
+        final List<MyMemoriesEvent> newMemories =
+
+            model.data.myMemoriesEvent ?? [];
+
+
+
+        final meta = model.data.meta;
+
+        totalPagesMemories = meta.total ?? 1;
+
+        
+
+        if (page == null) {
+
+          if (pageToFetch == 1) myMemoriesList.clear();
+
+          myMemoriesList.addAll(newMemories);
+
+          currentPageMemories++;
+
+        } else {
+
+          
+
+          final startIndex = (pageToFetch - 1) * newMemories.length;
+
+          if (startIndex < myMemoriesList.length) {
+
+            final endIndex = (startIndex + newMemories.length)
+
+                .clamp(0, myMemoriesList.length);
+
+            myMemoriesList.replaceRange(startIndex, endIndex, newMemories);
+
+          } else {
+
+            myMemoriesList.addAll(newMemories);
+
+          }
+
+        }
+
+
+
+        setFavouriteMemoriesStatus(Status.completed);
+
+      } else {
+
+        setFavouriteMemoriesStatus(Status.error);
+
+        Get.snackbar("Error", "Failed to load memories");
+
+      }
+
+    } catch (e, stack) {
+
+      debugPrint("Error fetching memories: $e");
+
+      debugPrint(stack.toString());
+
+      setFavouriteMemoriesStatus(Status.error);
+
+    } finally {
+
+      isLoadingMemories.value = false;
+
+      isMoreMemoriesLoading.value = false;
+
+    }
+
+  }
+
+
+
+//Love count api call. And receive page.
+
+
+
+Future<void> loveCount({required String favoriteEventId, required bool isLove, required int currentPage,}) async {
+
+    try {
+
+      final body = {
+
+        "uploadMemorieSeventId": favoriteEventId,
+
+        "isLove": isLove,
+
+      };
+
+
+
+      final response =
+
+      await ApiClient.postData(ApiUrl.loveEmoji, jsonEncode(body));
+
+
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+
+        showCustomSnackBar("Reaction updated", isError: false);
+
+
+
+        // ✅ কেবল ওই page রিফ্রেশ করো
+
+        await getMyMemories(
+
+          contentType: currentFilter,
+
+          page: currentPage,
+
+        );
+
+
+
+        update();
+
+      } else {
+
+        showCustomSnackBar("Failed to update", isError: true);
+
+      }
+
+    } catch (e) {
+
+      showCustomSnackBar("Error: $e", isError: true);
+
+    } finally {
+
+      isLoveLoading.value = false;
+
+      update();
+
+    }
+
+  } 
+
+
+
+Flow=> Pass the page to controller=> Then receive the page on controller using params=> Then Love count page receive
